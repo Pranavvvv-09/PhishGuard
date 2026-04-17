@@ -16,7 +16,6 @@ import type {
 } from "./types";
 import { sleep } from "./utils";
 
-const DIVIDER = chalk.gray("=".repeat(78));
 const DNS_TABLE_TYPES = ["A", "MX", "NS", "TXT", "CNAME"] as const;
 
 type LogLevel = "info" | "success" | "warning" | "critical";
@@ -55,8 +54,35 @@ function boxColor(level: RiskLevel): "green" | "yellow" | "red" | "cyan" {
   return "cyan";
 }
 
+function terminalWidth(): number {
+  const width = process.stdout.columns ?? 120;
+  return Math.max(78, Math.min(180, width));
+}
+
+function dividerLine(): string {
+  return chalk.gray("=".repeat(terminalWidth()));
+}
+
+function twoColumnWidths(firstColWidth: number): [number, number] {
+  const total = terminalWidth();
+  const second = Math.max(24, total - firstColWidth - 8);
+  return [firstColWidth, second];
+}
+
+function threeColumnWidths(second: number, third: number): [number, number, number] {
+  const total = terminalWidth();
+  const first = Math.max(30, total - second - third - 10);
+  return [first, second, third];
+}
+
+function fourColumnWidths(second: number, third: number, fourth: number): [number, number, number, number] {
+  const total = terminalWidth();
+  const first = Math.max(24, total - second - third - fourth - 12);
+  return [first, second, third, fourth];
+}
+
 export function divider(): void {
-  console.log(DIVIDER);
+  console.log(dividerLine());
 }
 
 export function section(title: string): void {
@@ -137,6 +163,7 @@ function renderSummaryBox(target: string, level: RiskLevel, score: number, expla
       borderColor: boxColor(level),
       title: "Risk Summary",
       titleAlignment: "left",
+      width: Math.max(48, terminalWidth() - 2),
     }),
   );
 }
@@ -149,17 +176,19 @@ function renderIndicators(indicators: string[]): void {
   }
 
   for (const indicator of indicators) {
-    console.log(`${chalk.yellow("⚠")} ${chalk.white(indicator)}`);
+    console.log(`${chalk.yellow("[!]")} ${chalk.white(indicator)}`);
   }
 }
 
 function renderDnsTableFromFinding(finding: DomainFinding): void {
   section("DNS Table");
   const found = new Set(finding.registration.dnsRecordTypes.map((item) => item.toUpperCase()));
+  const [recordWidth, valueWidth] = twoColumnWidths(14);
 
   const table = new Table({
     head: [chalk.cyan("Record"), chalk.cyan("Value")],
-    colWidths: [14, 44],
+    colWidths: [recordWidth, valueWidth],
+    wordWrap: true,
     style: { head: [], border: [] },
   });
 
@@ -176,9 +205,11 @@ function renderDnsTableFromFinding(finding: DomainFinding): void {
 
 async function renderDnsTableForHostname(hostname: string): Promise<void> {
   section("DNS Table");
+  const [recordWidth, valueWidth] = twoColumnWidths(14);
   const table = new Table({
     head: [chalk.cyan("Record"), chalk.cyan("Value")],
-    colWidths: [14, 44],
+    colWidths: [recordWidth, valueWidth],
+    wordWrap: true,
     style: { head: [], border: [] },
   });
 
@@ -199,6 +230,46 @@ async function renderDnsTableForHostname(hostname: string): Promise<void> {
   }
 
   console.log(table.toString());
+}
+
+type Verdict = "SAFE" | "SUSPICIOUS" | "MALICIOUS";
+
+function verdictFromScore(score: number): Verdict {
+  if (score >= 75) {
+    return "MALICIOUS";
+  }
+  if (score >= 35) {
+    return "SUSPICIOUS";
+  }
+  return "SAFE";
+}
+
+function verdictColor(verdict: Verdict) {
+  if (verdict === "SAFE") {
+    return chalk.greenBright;
+  }
+  if (verdict === "SUSPICIOUS") {
+    return chalk.yellowBright;
+  }
+  return chalk.redBright;
+}
+
+function renderVerdictBanner(score: number): void {
+  const verdict = verdictFromScore(score);
+  const color = verdictColor(verdict);
+  const content = `${chalk.gray("Final Verdict:")} ${color.bold(verdict)}   ${chalk.gray("Score:")} ${color(
+    `${score}/100`,
+  )}`;
+  console.log(
+    boxen(content, {
+      padding: { left: 2, right: 2, top: 0, bottom: 0 },
+      borderStyle: "doubleSingle",
+      borderColor: verdict === "SAFE" ? "green" : verdict === "SUSPICIOUS" ? "yellow" : "red",
+      title: "Verdict",
+      titleAlignment: "center",
+      width: Math.max(42, terminalWidth() - 2),
+    }),
+  );
 }
 
 export function renderDomainOutput(report: DomainAnalysisReport, outBase: string, formats: string[]): void {
@@ -222,9 +293,11 @@ export function renderDomainOutput(report: DomainAnalysisReport, outBase: string
   renderDnsTableFromFinding(top);
 
   section("Top Findings");
+  const [variantCol, techniqueCol, scoreCol, riskCol] = fourColumnWidths(18, 10, 12);
   const table = new Table({
     head: [chalk.cyan("Variant"), chalk.cyan("Technique"), chalk.cyan("Score"), chalk.cyan("Risk")],
-    colWidths: [35, 18, 10, 12],
+    colWidths: [variantCol, techniqueCol, scoreCol, riskCol],
+    wordWrap: true,
     style: { head: [], border: [] },
   });
 
@@ -237,6 +310,8 @@ export function renderDomainOutput(report: DomainAnalysisReport, outBase: string
     ]);
   }
   console.log(table.toString());
+  console.log("");
+  renderVerdictBanner(top.score);
   logMessage("info", `Reports written: ${outBase}.{${formats.join(",")}}`);
   divider();
 }
@@ -293,9 +368,11 @@ export async function renderQrOutput(
   }
 
   section("Top Payloads");
+  const [payloadCol, scoreCol, riskCol] = threeColumnWidths(10, 12);
   const table = new Table({
     head: [chalk.cyan("Payload"), chalk.cyan("Score"), chalk.cyan("Risk")],
-    colWidths: [58, 10, 12],
+    colWidths: [payloadCol, scoreCol, riskCol],
+    wordWrap: true,
     style: { head: [], border: [] },
   });
 
@@ -307,13 +384,15 @@ export async function renderQrOutput(
   for (const finding of ranked) {
     const analysis = finding.analysis as QuishingUrlAnalysis;
     table.push([
-      (analysis.finalUrl ?? finding.decodedPayload ?? finding.source).slice(0, 55),
+      analysis.finalUrl ?? finding.decodedPayload ?? finding.source,
       String(analysis.score),
       levelColor(analysis.level)(levelTag(analysis.level)),
     ]);
   }
 
   console.log(table.toString());
+  console.log("");
+  renderVerdictBanner(top.analysis.score);
   logMessage("info", `Reports written: ${outBase}.{${formats.join(",")}}`);
   divider();
 }

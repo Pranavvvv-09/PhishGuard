@@ -293,6 +293,11 @@ export async function analyzeQrUrl(urlInput: string): Promise<QuishingUrlAnalysi
   const parsedFinal = new URL(finalUrl);
   const finalHost = parsedFinal.hostname.toLowerCase();
 
+  if (parsedFinal.protocol === "http:") {
+    score += 12;
+    suspiciousIndicators.push("Uses HTTP instead of HTTPS");
+  }
+
   if (URL_SHORTENERS.has(new URL(urlInput).hostname.toLowerCase())) {
     score += 20;
     suspiciousIndicators.push("URL shortener used in QR payload");
