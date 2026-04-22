@@ -181,9 +181,15 @@ def score_url_signals(signals: Dict[str, Any]) -> Tuple[int, List[str], List[str
         reasons.append("Path/query contains phishing-related language")
 
     brand_signal = signals.get("brand_signal")
+    similarity_score = float(signals.get("similarity_score", 0))
+
+    if similarity_score > 80:
+        add(25, "High brand similarity")
+        indicators.append("Domain resembles known brand")
+        reasons.append("Hostname is highly similar to a known brand")
+
     if brand_signal:
         base = 25
-        similarity_score = float(signals.get("similarity_score", 0))
         if similarity_score >= 80:
             base += 10
         elif similarity_score >= 70:

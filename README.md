@@ -1,4 +1,4 @@
-# PhishGuard
+# PhishGuard: Phising Domain & Url Detection tool
 
 Defensive cybersecurity CLI for detecting phishing domains and suspicious URLs using typosquatting analysis, similarity scoring, heuristic detection, and explainable risk scoring.
 
