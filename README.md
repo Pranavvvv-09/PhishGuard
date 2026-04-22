@@ -2,14 +2,6 @@
 
 Defensive cybersecurity CLI for detecting phishing domains and suspicious URLs using typosquatting analysis, similarity scoring, heuristic detection, and explainable risk scoring.
 
-## Open Source Status
-
-PhishGuard is open source under the **MIT License**.
-
-- License: [LICENSE](LICENSE)
-- Contributing Guide: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Code of Conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-- Security Policy: [SECURITY.md](SECURITY.md)
 
 ## What This Tool Does
 
@@ -45,24 +37,6 @@ Do not use it to facilitate phishing, impersonation, or malicious operations.
 - **Configuration**
   - `python-dotenv` for `.env` (VirusTotal API key)
 
-## Architecture
-
-```text
-phishguard_py/
-  __init__.py
-  __main__.py
-  cli.py
-  models.py
-  utils.py
-  variant_generator.py
-  dns_checks.py
-  domain_keywords.py
-  domain_intel.py
-  scoring.py
-  reporting.py
-requirements.txt
-README.md
-```
 
 ## Algorithms In Detail
 
