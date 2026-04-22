@@ -247,9 +247,12 @@ This makes the model behavior demo-friendly and auditable.
 
 ## Install
 
-```bash
+gitclone https://github.com/Pranavvvv-09/PhishGuard
+
+##create Virtual envirnment 
 python3 -m venv .venv
 source .venv/bin/activate
+
 pip install -r requirements.txt
 ```
 
@@ -290,21 +293,4 @@ python3 -m phishguard_py url "https://example.com" --out reports/url_report --fo
 python3 -m phishguard_py domain google.com --out reports/domain_report --formats json,csv,html
 ```
 
-## Demo-Safe Behavior
 
-- External failures never hard-crash analysis.
-- RDAP/VT/DNS partial outages return usable results.
-- Unavailable enrichments are shown as `unavailable (skipped/not found)` style indicators.
-
-## Publishing Publicly on GitHub
-
-To make the repository open to everyone on GitHub:
-
-1. Open repository `Settings`.
-2. Go to `General` -> `Danger Zone`.
-3. Change visibility to `Public`.
-4. Push these docs/files:
-   - `LICENSE`
-   - `CONTRIBUTING.md`
-   - `CODE_OF_CONDUCT.md`
-   - `SECURITY.md`
