@@ -19,3 +19,7 @@ pnpm-debug.log*
 .env.local
 .env.*.local
 
+# Python artifacts
+__pycache__/
+*.pyc
+.venv/
